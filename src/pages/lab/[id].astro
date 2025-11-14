@@ -1,0 +1,572 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+// 動的ルートの設定（SSRモード用）
+export const prerender = false;
+---
+
+<Layout title="coens-labpicker-25 - 研究室詳細">
+  <div class="container">
+    <div id="loading" class="loading">読み込み中...</div>
+
+    <div id="content" style="display: none;">
+      <header>
+        <button id="back-btn" class="btn-back">← ダッシュボードに戻る</button>
+        <button id="logout-btn" class="btn-logout">ログアウト</button>
+      </header>
+
+      <div class="card">
+        <div class="lab-header">
+          <div>
+            <h1 id="lab-name"></h1>
+            <p class="lab-meta">
+              <span id="lab-major" class="major-badge"></span>
+              <span class="professor">👨‍🔬 <span id="lab-professor"></span></span>
+            </p>
+          </div>
+          <div class="lab-stats-summary">
+            <div class="stat-box">
+              <div class="stat-label">定員</div>
+              <div class="stat-value" id="capacity"></div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">希望者数</div>
+              <div class="stat-value" id="applicant-count"></div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">倍率</div>
+              <div class="stat-value" id="ratio"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="my-status" class="my-status" style="display: none;">
+          <h3>📍 あなたの状況</h3>
+          <div class="status-grid">
+            <div class="status-item">
+              <span class="status-label">順位</span>
+              <span class="status-value" id="my-rank"></span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">あなたのGPA</span>
+              <span class="status-value" id="my-gpa"></span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">合格見込み</span>
+              <span class="status-value" id="my-status-text"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>📊 希望者一覧（GPA順）</h2>
+          <div class="table-container">
+            <table id="applicants-table">
+              <thead>
+                <tr>
+                  <th>順位</th>
+                  <th>GPA</th>
+                  <th>状態</th>
+                </tr>
+              </thead>
+              <tbody id="applicants-body">
+              </tbody>
+            </table>
+          </div>
+          <p class="note">※ プライバシー保護のため、個人を特定できる情報は表示されません</p>
+        </div>
+
+        <div class="section">
+          <h2>📈 GPA分布</h2>
+          <div id="gpa-distribution" class="distribution-chart"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { supabase, type Lab, type LabApplicant } from '../../lib/supabase';
+
+    let currentUser: any = null;
+    let labId: string = '';
+
+    async function init() {
+      // URLからIDを取得
+      const pathParts = window.location.pathname.split('/');
+      labId = pathParts[pathParts.length - 1];
+
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        window.location.href = '/';
+        return;
+      }
+
+      currentUser = session.user;
+
+      if (!currentUser.email?.endsWith('@u.tsukuba.ac.jp')) {
+        alert('筑波大学のメールアドレスのみ利用可能です');
+        await supabase.auth.signOut();
+        window.location.href = '/';
+        return;
+      }
+
+      await loadLabDetail();
+
+      document.getElementById('loading')!.style.display = 'none';
+      document.getElementById('content')!.style.display = 'block';
+    }
+
+    async function loadLabDetail() {
+      // 研究室情報取得
+      const { data: lab, error: labError } = await supabase
+        .from('labs')
+        .select('*')
+        .eq('id', labId)
+        .single();
+
+      if (labError || !lab) {
+        alert('研究室が見つかりません');
+        window.location.href = '/dashboard';
+        return;
+      }
+
+      // 希望者情報取得
+      const { data: applicants, error: applicantsError } = await supabase
+        .from('view_lab_applicants')
+        .select('*')
+        .eq('lab_id', labId)
+        .order('rank');
+
+      if (applicantsError) {
+        console.error('希望者データ取得エラー:', applicantsError);
+        return;
+      }
+
+      displayLabInfo(lab, applicants || []);
+    }
+
+    function displayLabInfo(lab: Lab, applicants: LabApplicant[]) {
+      // 研究室基本情報
+      document.getElementById('lab-name')!.textContent = lab.name;
+      document.getElementById('lab-major')!.textContent = lab.major;
+      document.getElementById('lab-professor')!.textContent = lab.professor || '未定';
+      document.getElementById('capacity')!.textContent = `${lab.capacity}名`;
+      document.getElementById('applicant-count')!.textContent = `${applicants.length}名`;
+      
+      const ratio = applicants.length / lab.capacity;
+      const ratioElement = document.getElementById('ratio')!;
+      ratioElement.textContent = `${ratio.toFixed(2)}倍`;
+      
+      if (ratio >= 1.5) ratioElement.className = 'stat-value status-high';
+      else if (ratio >= 1) ratioElement.className = 'stat-value status-medium';
+      else ratioElement.className = 'stat-value status-low';
+
+      // 自分の状況
+      const myData = applicants.find(a => a.id === currentUser.id);
+      if (myData) {
+        document.getElementById('my-status')!.style.display = 'block';
+        document.getElementById('my-rank')!.textContent = `${myData.rank}位 / ${applicants.length}名`;
+        document.getElementById('my-gpa')!.textContent = myData.gpa.toFixed(2);
+        
+        const statusText = document.getElementById('my-status-text')!;
+        if (myData.rank <= lab.capacity) {
+          statusText.textContent = '✅ 合格圏内';
+          statusText.className = 'status-value status-safe';
+        } else {
+          statusText.textContent = '⚠️ 定員オーバー';
+          statusText.className = 'status-value status-danger';
+        }
+      }
+
+      // 希望者テーブル
+      const tbody = document.getElementById('applicants-body')!;
+      tbody.innerHTML = applicants.map(applicant => {
+        const isMe = applicant.id === currentUser.id;
+        const isWithinCapacity = applicant.rank <= lab.capacity;
+        let rowClass = '';
+        let statusBadges = '';
+        
+        if (isMe) {
+          rowClass = 'my-row';
+          statusBadges = '<span class="badge-me">あなた</span>';
+        }
+        
+        if (isWithinCapacity) {
+          statusBadges += '<span class="badge-safe">合格圏内</span>';
+        } else {
+          statusBadges += '<span class="badge-danger">定員オーバー</span>';
+        }
+
+        return `
+          <tr class="${rowClass}">
+            <td>${applicant.rank}位</td>
+            <td>${applicant.gpa.toFixed(2)}</td>
+            <td class="status-badges">${statusBadges}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // GPA分布グラフ
+      displayGPADistribution(applicants, lab.capacity);
+    }
+
+    function displayGPADistribution(applicants: LabApplicant[], capacity: number) {
+      const container = document.getElementById('gpa-distribution')!;
+      
+      if (applicants.length === 0) {
+        container.innerHTML = '<p class="no-data">希望者がいません</p>';
+        return;
+      }
+
+      const bins = [
+        { min: 4.0, max: 4.31, label: '4.0-4.3' },
+        { min: 3.5, max: 4.0, label: '3.5-4.0' },
+        { min: 3.0, max: 3.5, label: '3.0-3.5' },
+        { min: 2.5, max: 3.0, label: '2.5-3.0' },
+        { min: 2.0, max: 2.5, label: '2.0-2.5' },
+        { min: 0, max: 2.0, label: '0-2.0' }
+      ];
+
+      const distribution = bins.map(bin => {
+        const count = applicants.filter(a => a.gpa >= bin.min && a.gpa < bin.max).length;
+        return { ...bin, count };
+      });
+
+      const maxCount = Math.max(...distribution.map(d => d.count), 1);
+
+      container.innerHTML = distribution.map(d => {
+        const percentage = (d.count / maxCount) * 100;
+        return `
+          <div class="bar-container">
+            <div class="bar-label">${d.label}</div>
+            <div class="bar-wrapper">
+              <div class="bar" style="width: ${percentage}%"></div>
+              <span class="bar-count">${d.count}名</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 戻るボタン
+    document.getElementById('back-btn')?.addEventListener('click', () => {
+      window.location.href = '/dashboard';
+    });
+
+    // ログアウト
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = '/';
+    });
+
+    init();
+  </script>
+</Layout>
+
+<style>
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 3rem;
+    color: #333;
+    font-size: 1.2rem;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+
+  .btn-back, .btn-logout {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
+  .btn-back {
+    background: white;
+    color: #333;
+  }
+
+  .btn-back:hover {
+    background: #f0f0f0;
+  }
+
+  .btn-logout {
+    background: #f44336;
+    color: white;
+  }
+
+  .btn-logout:hover {
+    background: #d32f2f;
+  }
+
+  .card {
+    background: white;
+    padding: 2rem;
+    border-radius: 0;
+    border: 1px solid #e0e0e0;
+  }
+
+  .lab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid #f0f0f0;
+  }
+
+  .lab-header h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.8rem;
+  }
+
+  .lab-meta {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin: 0;
+  }
+
+  .major-badge {
+    display: inline-block;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.75rem;
+    background: #e3f2fd;
+    color: #1976d2;
+    border-radius: 0;
+    border: 1px solid #90caf9;
+  }
+
+  .professor {
+    color: #666;
+  }
+
+  .lab-stats-summary {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .stat-box {
+    text-align: center;
+    padding: 1rem;
+    background: #f5f5f5;
+    border-radius: 0;
+    border: 1px solid #e0e0e0;
+    min-width: 100px;
+  }
+
+  .stat-label {
+    display: block;
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .status-low { color: #4CAF50; }
+  .status-medium { color: #FF9800; }
+  .status-high { color: #f44336; }
+
+  .my-status {
+    background: #e8f5e9;
+    border: 2px solid #4CAF50;
+    border-radius: 0;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .my-status h3 {
+    margin: 0 0 1rem 0;
+    color: #2e7d32;
+  }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .status-item {
+    text-align: center;
+    padding: 1rem;
+    background: white;
+    border-radius: 0;
+    border: 1px solid #e0e0e0;
+  }
+
+  .status-item .status-label {
+    display: block;
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+  }
+
+  .status-item .status-value {
+    display: block;
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+
+  .status-safe { color: #4CAF50; }
+  .status-danger { color: #f44336; }
+
+  .section {
+    margin: 2rem 0;
+  }
+
+  .section h2 {
+    margin-bottom: 1rem;
+    color: #1a1a1a;
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+
+  th {
+    background: #f5f5f5;
+    font-weight: 600;
+  }
+
+  .status-badges {
+    white-space: nowrap;
+  }
+
+  .my-row {
+    background: #e8f5e9;
+    font-weight: 600;
+  }
+
+  .badge-me {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: #4CAF50;
+    color: white;
+    border-radius: 0;
+    font-size: 0.85rem;
+    margin-right: 0.5rem;
+  }
+
+  .badge-safe {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: #4CAF50;
+    color: white;
+    border-radius: 0;
+    font-size: 0.85rem;
+  }
+
+  .badge-danger {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: #f44336;
+    color: white;
+    border-radius: 0;
+    font-size: 0.85rem;
+  }
+
+  .note {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: #666;
+  }
+
+  .distribution-chart {
+    margin-top: 1rem;
+  }
+
+  .bar-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: 1rem;
+  }
+
+  .bar-label {
+    width: 80px;
+    font-size: 0.9rem;
+    color: #666;
+    flex-shrink: 0;
+  }
+
+  .bar-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 30px;
+  }
+
+  .bar {
+    height: 30px;
+    background: linear-gradient(90deg, #4CAF50, #81C784);
+    border-radius: 0;
+    transition: width 0.3s ease;
+    min-width: 2px;
+  }
+
+  .bar-count {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+    min-width: 40px;
+  }
+
+  .no-data {
+    text-align: center;
+    color: #666;
+    padding: 2rem;
+  }
+
+  @media (max-width: 768px) {
+    .lab-header {
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .lab-stats-summary {
+      width: 100%;
+      justify-content: space-around;
+    }
+
+    .stat-box {
+      min-width: auto;
+    }
+
+    .status-grid {
+      grid-template-columns: 1fr;
+    }
+
+    header {
+      flex-direction: column;
+      gap: 1rem;
+    }
+  }
+</style>
