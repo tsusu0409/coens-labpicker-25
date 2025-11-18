@@ -15,6 +15,15 @@ import Layout from '../layouts/Layout.astro';
     <div id="loading" class="loading">読み込み中...</div>
 
     <div id="content" style="display: none;">
+      <!-- 警告メッセージ -->
+      <div class="notice-banner">
+        <span class="notice-icon">⚠️</span>
+        <div class="notice-content">
+          <strong>既知の不具合について</strong>
+          <p>ページを再び開いたときや再ログイン時に、登録済みの研究室が「未登録」と表示される場合があります。この症状が発生した場合は、お手数ですがページのリロード（Ctrl+R または F5）をお試しください。</p>
+        </div>
+      </div>
+
       <!-- 登録フォーム -->
       <section class="card">
         <h2>📝 志望情報の登録</h2>
@@ -97,6 +106,9 @@ import Layout from '../layouts/Layout.astro';
       }
 
       document.getElementById('user-email')!.textContent = currentUser.email;
+
+      // 500ms待機してからデータ読み込み
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       await Promise.all([
         loadLabs(),
@@ -346,6 +358,39 @@ import Layout from '../layouts/Layout.astro';
     font-size: 1.2rem;
   }
 
+  .notice-banner {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 0;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .notice-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .notice-content {
+    flex: 1;
+  }
+
+  .notice-content strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #856404;
+  }
+
+  .notice-content p {
+    margin: 0;
+    color: #856404;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
   .card {
     background: white;
     padding: 2rem;
@@ -552,6 +597,15 @@ import Layout from '../layouts/Layout.astro';
 
     .labs-list {
       grid-template-columns: 1fr;
+    }
+
+    .notice-banner {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .notice-icon {
+      font-size: 2rem;
     }
   }
 </style>
