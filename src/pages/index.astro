@@ -32,6 +32,10 @@ import Layout from '../layouts/Layout.astro';
           <button type="submit" class="btn-primary">ログイン</button>
         </form>
 
+        <div class="forgot-password">
+          <a href="/reset-password">パスワードを忘れた方</a>
+        </div>
+
         <div class="divider">または</div>
 
         <button id="signup-toggle" class="btn-secondary">新規登録</button>
@@ -152,7 +156,7 @@ import Layout from '../layouts/Layout.astro';
       if (error) {
         showMessage('登録失敗: ' + error.message, 'error');
       } else {
-        showMessage('登録成功！確認メールを送信しました。「Supabase」からのメールを確認してください。', 'success');
+        showMessage('登録成功！確認メールを送信しました。メールを確認してください。', 'success');
       }
     });
 
@@ -327,6 +331,21 @@ import Layout from '../layouts/Layout.astro';
   }
 
   .terms-checkbox a:hover {
+    text-decoration: underline;
+  }
+
+  .forgot-password {
+    text-align: center;
+    margin-top: 1rem;
+  }
+
+  .forgot-password a {
+    color: #2196F3;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+
+  .forgot-password a:hover {
     text-decoration: underline;
   }
 
