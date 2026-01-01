@@ -1,0 +1,75 @@
+/* Google Fonts: Zen Kaku Gothic New (角張ったゴシック) を採用 */
+@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* キーカラー */
+  --primary: #85BCC7;
+  --primary-dark: #6fa3ae;
+  --bg-base: #f8f9fa; /* より白に近いグレーでクリーンに */
+  --text-main: #1F2937; /* 真っ黒ではなくダークグレーで目に優しく */
+  --text-muted: #6B7280;
+}
+
+/* 全体に角ゴシックを適用 */
+body {
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-main);
+  /* 紙のような質感ノイズ（薄く残す） */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3%3Ffilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.4'/%3E%3C/svg%3E");
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 見出しも同じフォントで太さを変えて表現 */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  font-weight: 700; /* Boldで力強く */
+  letter-spacing: 0.05em; /* 少し広げて読みやすく */
+}
+
+/* カスタムボタン：完全に角を尖らせる */
+.btn-coens {
+  @apply relative overflow-hidden px-8 py-4 transition-all duration-200 active:scale-[0.98];
+  background-color: var(--primary);
+  color: white;
+  border-radius: 0px; /* 角丸なし */
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.btn-coens:hover {
+  background-color: var(--primary-dark);
+}
+
+/* インプット：下線のみ、または角張った枠 */
+.input-coens {
+  @apply w-full bg-transparent border-b-2 border-gray-200 py-3 px-1 transition-all duration-300 focus:outline-none focus:border-[#85BCC7] text-[#1F2937];
+  border-radius: 0px;
+}
+
+/* スクロールバーのカスタマイズ（Webkit系） */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 0px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #85BCC7;
+}
+
+/* ユーティリティクラスの拡張 */
+@layer utilities {
+  .font-feature-settings {
+    font-feature-settings: "palt"; /* 文字詰め */
+  }
+}
