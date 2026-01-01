@@ -87,7 +87,7 @@ export default function LoginPage() {
             Coens<br />Lab<br />Picker
           </h1>
           <div className="w-20 h-1 bg-white mb-8" />
-          <p className="text-lg font-light tracking-widest uppercase">2025 Edition</p>
+          <p className="text-lg font-light tracking-widest uppercase">version 2026</p>
         </div>
         
         {/* 装飾的な背景円 */}
