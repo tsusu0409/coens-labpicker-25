@@ -23,8 +23,8 @@ export default function LabDetailPage() {
     setCurrentUser(session.user);
 
     const [labRes, appRes] = await Promise.all([
-      supabase.from('labs').select('*').eq('id', id).single(),
-      supabase.from('view_lab_applicants').select('*').eq('lab_id', id).order('gpa', { ascending: false })
+      supabase.from('labs').select('*').eq('id', id as string).single(),
+      supabase.from('view_lab_applicants').select('*').eq('lab_id', id as string).order('gpa', { ascending: false })
     ]);
 
     if (labRes.data) setLab(labRes.data);
