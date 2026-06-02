@@ -100,103 +100,63 @@ export default function LoginPage() {
 
       {/* 右側：フォームセクション */}
       <div className="md:w-1/2 flex items-center justify-center p-8 md:p-24 bg-[#fdfdfd]">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="w-full max-w-md"
         >
-          <h2 className="text-3xl mb-2 text-[#1a2c2f] font-serif">
+          {/* 実施期間終了の告知 */}
+          <div className="mb-10 p-5 bg-amber-50 border border-amber-300 rounded-sm">
+            <p className="text-sm font-bold text-amber-800 mb-1">実施期間終了のお知らせ</p>
+            <p className="text-xs text-amber-700 leading-relaxed">
+              2025年度の研究室配属支援システムの実施期間は終了しました。<br />
+              ご利用いただきありがとうございました。
+            </p>
+          </div>
+
+          <h2 className="text-3xl mb-2 text-[#1a2c2f] font-serif opacity-40">
             {isLogin ? "Welcome back" : "Create account"}
           </h2>
-          <p className="text-xs text-[#5e7175] mb-10 tracking-wide">
+          <p className="text-xs text-[#5e7175] mb-10 tracking-wide opacity-40">
             {isLogin ? "アカウントにログインしてください" : "新規アカウントを作成します"}
           </p>
-          
-          <form onSubmit={isLogin ? handleLogin : handleSignup} className="space-y-8">
+
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-8 opacity-40 pointer-events-none select-none">
             <div className="group">
-              <label className="text-xs uppercase tracking-widest text-[#5e7175] group-focus-within:text-[#85BCC7] transition-colors block mb-2">
+              <label className="text-xs uppercase tracking-widest text-[#5e7175] block mb-2">
                 University Email
               </label>
-              <input 
-                type="email" 
-                className="w-full bg-transparent border-b-2 border-gray-200 py-3 px-2 transition-all duration-300 focus:outline-none focus:border-[#85BCC7] text-[#1a2c2f]"
+              <input
+                type="email"
+                className="w-full bg-transparent border-b-2 border-gray-200 py-3 px-2 text-[#1a2c2f] cursor-not-allowed"
                 placeholder="s2xxxxx@u.tsukuba.ac.jp"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                pattern=".*@u\.tsukuba\.ac\.jp$"
+                disabled
               />
             </div>
-            
+
             <div className="group">
-              <label className="text-xs uppercase tracking-widest text-[#5e7175] group-focus-within:text-[#85BCC7] transition-colors block mb-2">
+              <label className="text-xs uppercase tracking-widest text-[#5e7175] block mb-2">
                 Password
               </label>
-              <input 
-                type="password" 
-                className="w-full bg-transparent border-b-2 border-gray-200 py-3 px-2 transition-all duration-300 focus:outline-none focus:border-[#85BCC7] text-[#1a2c2f]"
+              <input
+                type="password"
+                className="w-full bg-transparent border-b-2 border-gray-200 py-3 px-2 text-[#1a2c2f] cursor-not-allowed"
                 placeholder="••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
+                disabled
               />
             </div>
 
-            {/* 新規登録時のみ表示する利用規約チェックボックス */}
-            {!isLogin && (
-              <div className="flex items-center gap-3 py-2">
-                <input 
-                  type="checkbox" 
-                  id="agree-terms"
-                  checked={agreeTerms}
-                  onChange={(e) => setAgreeTerms(e.target.checked)}
-                  className="w-4 h-4 text-[#85BCC7] border-gray-300 rounded focus:ring-[#85BCC7]"
-                />
-                <label htmlFor="agree-terms" className="text-xs text-[#5e7175]">
-                  <Link href="/terms" target="_blank" className="text-[#85BCC7] hover:underline underline-offset-2">
-                    利用規約
-                  </Link>
-                  に同意します
-                </label>
-              </div>
-            )}
-
-            <button 
-              type="submit" 
-              className="relative w-full overflow-hidden bg-[#85BCC7] text-white py-4 text-xs font-bold tracking-[0.2em] uppercase hover:bg-[#74a5af] transition-colors shadow-lg shadow-[#85BCC7]/20"
+            <button
+              type="button"
+              disabled
+              className="relative w-full overflow-hidden bg-[#85BCC7] text-white py-4 text-xs font-bold tracking-[0.2em] uppercase cursor-not-allowed"
             >
               {isLogin ? "Login" : "Sign Up"}
             </button>
           </form>
-
-          {/* メッセージ表示エリア */}
-          {message.text && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`mt-6 p-4 text-xs text-center border-l-2 ${
-                message.type === 'success' ? 'bg-[#e7f2f4] border-[#85BCC7] text-[#1a2c2f]' :
-                message.type === 'error' ? 'bg-red-50 border-red-400 text-red-800' :
-                'bg-gray-50 border-gray-400 text-gray-800'
-              }`}
-            >
-              {message.text}
-            </motion.div>
-          )}
-
-          <div className="mt-12 flex justify-between items-center text-xs text-[#5e7175] border-t border-gray-100 pt-8">
-            <button onClick={() => {
-              setIsLogin(!isLogin);
-              setMessage({ text: '', type: null });
-            }} className="hover:text-[#85BCC7] transition-colors uppercase tracking-wider">
-              {isLogin ? "Create an account" : "Back to login"}
-            </button>
-            <Link href="/reset-password" className="hover:text-[#85BCC7] transition-colors">
-              Forgot password?
-            </Link>
-          </div>
         </motion.div>
       </div>
     </div>
